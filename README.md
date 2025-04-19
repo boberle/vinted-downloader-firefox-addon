@@ -79,6 +79,11 @@ It won't work in the United Kingdom, if the TLD is `.co.uk`.
 The images in the conversation are assumed to be JPG images (I think it is the only allowed format).
 
 
+## Change log
+
+- 2025-04-19: v1.1: add vinted.sk
+
+
 ## License
 
 MIT.
