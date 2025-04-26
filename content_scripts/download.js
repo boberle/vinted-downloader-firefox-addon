@@ -18,6 +18,45 @@
     };
 
     /*
+    Get the html of the current product page.
+    */
+    const getCurrentProductPageHtml = async () => {
+        const response = await fetch(window.location.href);
+        return await response.text();
+    }
+
+    /*
+    Extract JSON data from the current page html.
+    */
+    const getCurrentProductPageJsonData = async () => {
+        const extractItemDtoData = (str) => {
+            const regex = /<script\b[^>]*>self\.__next_f\.push\((.*?)\)<\/script>/gi;
+            let match;
+            while ((match = regex.exec(str)) !== null) {
+                const content = match[1];
+                if (content.includes("itemDto")) {
+                    return content;
+                }
+            }
+            return null;
+        }
+        const htmlContent = await getCurrentProductPageHtml();
+        const arrayStr = extractItemDtoData(htmlContent)
+        if (arrayStr == null) {
+            return null;
+        }
+        const array = JSON.parse(arrayStr)
+        let jsonData = null;
+        for (let item of array) {
+            if (typeof item === "string" && item.startsWith("b:")) {
+                jsonData = JSON.parse(item.slice(2));
+                break;
+            }
+        }
+        return jsonData[0][3]["itemDto"];
+    }
+
+    /*
     Get the URL of the JSON containing the conversation data.
      */
     const getConversationUrl = () => {
@@ -28,19 +67,6 @@
             .slice(1);
         const conversationUrl = `https://www.vinted.${tld}/api/v2/conversations/${conversationId}`;
         return [conversationId, conversationUrl, tld];
-    };
-
-    /*
-    Get the URL of the JSON containing the product data.
-     */
-    const getProductUrl = () => {
-        const productId = window.location.href.match(/(?<=\/)\d+(?=-)/).pop();
-        const tld = window.location.host
-            .match(/\.[a-z]+$/)
-            .pop()
-            .slice(1);
-        const productUrl = `https://www.vinted.${tld}/api/v2/items/${productId}?localize=false&noredirect=1`;
-        return [productId, productUrl, tld];
     };
 
     /*
@@ -84,32 +110,38 @@
             })
 
         } else if (message.command === "download-product") {
-            const [productId, productUrl] = getProductUrl();
+            const data = await getCurrentProductPageJsonData();
+            if (data === null) {
+                throw new Error("No JSON data found for the current product page");
+            }
+            const productId = data?.id;
             const filename = `vinted-item-${productId}.json`;
-            const fetched = await fetch(productUrl);
-            const data = await fetched.text();
-            download(data, filename, "application/json");
+            download(JSON.stringify(data), filename, "application/json");
 
         } else if (message.command === "download-summary") {
-            const [productId, productUrl] = getProductUrl();
+            const data = await getCurrentProductPageJsonData();
+            if (data === null) {
+                throw new Error("No JSON data found for the current product page");
+            }
+            const productId = data?.id;
             const filename = `vinted-item-${productId}-summary.txt`;
-            const fetched = await fetch(productUrl);
-            const data = await fetched.json();
             const summary = (
                 `id: ${productId}\n` +
-                `source: ${productUrl}\n` +
-                `title: ${data?.item?.title}\n` +
-                `description: ${data?.item?.description}\n` +
-                `seller: ${data?.item?.user?.login}\n` +
-                `seller id: ${data?.item?.user?.id}`
+                `source: ${window.location.href}\n` +
+                `title: ${data?.title}\n` +
+                `description: ${data.description}\n` +
+                `seller: ${data.user?.login}\n` +
+                `seller id: ${data.user?.id}`
             )
             download(summary, filename, "text/plain");
 
         } else if (message.command === "download-photos") {
-            const [productId, productUrl, tld] = getProductUrl();
-            const fetched = await fetch(productUrl);
-            const data = await fetched.json();
-            data?.item?.photos?.forEach(async photo => {
+            const data = await getCurrentProductPageJsonData();
+            if (data === null) {
+                throw new Error("No JSON data found for the current product page");
+            }
+            const productId = data?.id;
+            data?.photos?.forEach(async photo => {
                 const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
                 const photoUrl = photo.full_size_url;
                 const photoFetched = await fetch(photoUrl);
