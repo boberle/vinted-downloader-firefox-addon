@@ -48,7 +48,7 @@
         const array = JSON.parse(arrayStr)
         let jsonData = null;
         for (let item of array) {
-            if (typeof item === "string" && item.startsWith("b:")) {
+            if (typeof item === "string" && item.startsWith("c:")) {
                 jsonData = JSON.parse(item.slice(2));
                 break;
             }
