@@ -60,7 +60,7 @@
     Get the URL of the JSON containing the conversation data.
      */
     const getConversationUrl = () => {
-        const conversationId = window.location.href.match(/\d+$/).pop();
+        const conversationId = window.location.href.match(/\d+/).pop();
         const tld = window.location.host
             .match(/\.[a-z]+$/)
             .pop()
