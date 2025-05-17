@@ -49,7 +49,7 @@
         let jsonData = null;
         for (let item of array) {
             if (typeof item === "string" && item.includes("itemDto")) {
-                const jsonString = item.replace(/[a-zA-Z]+:/, "");
+                const jsonString = item.replace(/^[a-zA-Z]+:/, "");
                 jsonData = JSON.parse(jsonString);
                 break;
             }
