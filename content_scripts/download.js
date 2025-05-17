@@ -48,10 +48,14 @@
         const array = JSON.parse(arrayStr)
         let jsonData = null;
         for (let item of array) {
-            if (typeof item === "string" && item.startsWith("c:")) {
-                jsonData = JSON.parse(item.slice(2));
+            if (typeof item === "string" && item.includes("itemDto")) {
+                const jsonString = item.replace(/[a-zA-Z]+:/, "");
+                jsonData = JSON.parse(jsonString);
                 break;
             }
+        }
+        if (jsonData == null) {
+            throw new Error("Failed to extract JSON data from the page.");
         }
         return jsonData[0][3]["itemDto"];
     }
