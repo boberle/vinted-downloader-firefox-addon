@@ -69,7 +69,7 @@
             .match(/\.[a-z]+$/)
             .pop()
             .slice(1);
-        const conversationUrl = `https://www.vinted.${tld}/web/api/core/conversations/${conversationId}`;
+        const conversationUrl = `https://www.vinted.${tld}/api/v2/conversations/${conversationId}`;
         return [conversationId, conversationUrl, tld];
     };
 
@@ -91,7 +91,7 @@
             const shipmentId = data?.conversation?.transaction?.id;
             if (shipmentId) {
                 const filename = `vinted-conversation-${conversationId}-shipment.json`;
-                const shipmentUrl = `https://www.vinted.${tld}/web/api/core/transactions/${shipmentId}/shipment/journey_summary`;
+                const shipmentUrl = `https://www.vinted.${tld}/api/v2/transactions/${shipmentId}/shipment/journey_summary`;
                 const shipmentFetched = await fetch(shipmentUrl);
                 const shipmentData = await shipmentFetched.text();
                 download(shipmentData, filename, "application/json");
