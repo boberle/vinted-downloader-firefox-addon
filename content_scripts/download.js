@@ -57,7 +57,7 @@
         if (jsonData == null) {
             throw new Error("Failed to extract JSON data from the page.");
         }
-        return jsonData[0][3]["itemDto"];
+        return jsonData[1][3]["itemDto"];
     }
 
     /*
