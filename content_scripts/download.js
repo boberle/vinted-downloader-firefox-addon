@@ -29,58 +29,35 @@
     Extract JSON data from the current page html.
     */
     const getCurrentProductPageJsonData = async () => {
-        const getItemDict = (data) => {
-            if (typeof data === 'object' && !Array.isArray(data) && data.hasOwnProperty('item')) {
-                return data['item'];
-            }
-
-            if (Array.isArray(data)) {
-                for (const item of data) {
-                    if (item != null && typeof item === 'object') {
-                        const res = getItemDict(item);
-                        if (res) return res;
-                    }
+        const extractItemDtoData = (str) => {
+            const regex = /<script\b[^>]*>self\.__next_f\.push\((.*?)\)<\/script>/gi;
+            let match;
+            while ((match = regex.exec(str)) !== null) {
+                const content = match[1];
+                if (content.includes("itemDto")) {
+                    return content;
                 }
-            } else if (typeof data === 'object') {
-                for (const [key, value] of Object.entries(data)) {
-                    if (value != null && typeof value === 'object') {
-                        const res = getItemDict(value);
-                        if (res) return res;
-                    }
-                }
-            } else {
-                throw new Error("Invalid data type");
             }
             return null;
         }
         const htmlContent = await getCurrentProductPageHtml();
-
-        const regex = /<script\b[^>]*>self\.__next_f\.push\((.*?)\)<\/script>/gs;
-        const matches = htmlContent.matchAll(regex);
-
-        for (const match of matches) {
-            if (!match[1].includes('full_size_url')) {
-                continue;
-            }
-
-            const outerList = JSON.parse(match[1]);
-            for (const outerItem of outerList) {
-                if (typeof outerItem !== 'string') {
-                    continue;
-                }
-
-                const modified = outerItem.replace(/^[a-zA-Z0-9]+:\[/, '[');
-                if (modified !== outerItem) {
-                    const parsed = JSON.parse(modified);
-                    const found = getItemDict(parsed);
-                    if (found) {
-                        return found;
-                    }
-                }
+        const arrayStr = extractItemDtoData(htmlContent)
+        if (arrayStr == null) {
+            return null;
+        }
+        const array = JSON.parse(arrayStr)
+        let jsonData = null;
+        for (let item of array) {
+            if (typeof item === "string" && item.includes("itemDto")) {
+                const jsonString = item.replace(/^[a-zA-Z]+:/, "");
+                jsonData = JSON.parse(jsonString);
+                break;
             }
         }
-
-        throw new Error("Failed to extract JSON data from the page.");
+        if (jsonData == null) {
+            throw new Error("Failed to extract JSON data from the page.");
+        }
+        return jsonData[1][3]["itemDto"];
     }
 
     /*
@@ -123,7 +100,7 @@
             }
 
         } else if (message.command === "download-images") {
-            const [conversationId, conversationUrl] = getConversationUrl();
+            const [conversationId, conversationUrl, tld] = getConversationUrl();
             const fetched = await fetch(conversationUrl);
             const data = await fetched.json();
             data?.conversation?.messages?.forEach(message => {
@@ -156,10 +133,9 @@
                 `id: ${productId}\n` +
                 `source: ${window.location.href}\n` +
                 `title: ${data?.title}\n` +
-                //`description: ${data.description}\n` +
-                //`seller: ${data.user?.login}\n` +
-                //`seller id: ${data.user?.id}`
-                `seller id: ${data.seller_id}`
+                `description: ${data.description}\n` +
+                `seller: ${data.user?.login}\n` +
+                `seller id: ${data.user?.id}`
             )
             download(summary, filename, "text/plain");
 
