@@ -8,7 +8,12 @@
     Actually make the download the given data when the user clicks on a button.
      */
     const download = (data, filename, mimeType) => {
-        const blob = new Blob([data], {type: mimeType});
+        let blob;
+        if (data instanceof Blob) {
+            blob = data;
+        } else {
+            blob = new Blob([data], {type: mimeType});
+        }
         const link = document.createElement("a");
         link.download = filename;
         link.href = window.URL.createObjectURL(blob);
@@ -97,6 +102,61 @@
     };
 
     /*
+    Build a tar file in order to download all the images at once.
+     */
+    const downloadFilesAsTar = async (files) => {
+        const encoder = new TextEncoder();
+        const tarParts = [];
+
+        function padTo512(data) {
+            const extra = 512 - (data.length % 512 || 512);
+            const padding = new Uint8Array(extra);
+            return new Uint8Array([...data, ...padding]);
+        }
+
+        function makeHeader(name, size) {
+            const buf = new Uint8Array(512);
+            const writeStr = (str, offset, len) => {
+                encoder.encodeInto(str.padEnd(len, '\0'), buf.subarray(offset, offset + len));
+            };
+
+            writeStr(name, 0, 100);                        // File name
+            writeStr('0000777', 100, 8);                   // File mode
+            writeStr('0000000', 108, 8);                   // Owner's numeric ID
+            writeStr('0000000', 116, 8);                   // Group's numeric ID
+            writeStr(size.toString(8).padStart(11, '0'), 124, 12);  // File size in octal
+            writeStr(Math.floor(Date.now() / 1000).toString(8), 136, 12); // Mod time
+            writeStr('        ', 148, 8);                  // Checksum placeholder
+            writeStr('0', 156, 1);                         // Type flag
+            writeStr('ustar', 257, 6);                     // UStar magic
+            writeStr('00', 263, 2);                        // UStar version
+
+            // Compute checksum
+            let checksum = 0;
+            for (let i = 0; i < 512; i++) {
+                checksum += buf[i];
+            }
+            const chk = checksum.toString(8).padStart(6, '0') + '\0 ';
+            encoder.encodeInto(chk, buf.subarray(148, 156));
+            return buf;
+        }
+
+        for (const file of files) {
+            const response = await fetch(file.url);
+            const data = new Uint8Array(await response.arrayBuffer());
+            const header = makeHeader(file.name, data.length);
+            tarParts.push(header);
+            tarParts.push(padTo512(data));
+        }
+
+        // Add 2 empty 512-byte blocks to end the TAR
+        tarParts.push(new Uint8Array(1024));
+
+        const tarBlob = new Blob(tarParts, { type: 'application/x-tar' });
+        download(tarBlob, "vinted-photos.tar");
+    }
+
+    /*
     Respond to messages from the popup (the user has clicked on a download button).
      */
     browser.runtime.onMessage.addListener(async (message) => {
@@ -176,6 +236,19 @@
                 const photoData = await photoFetched.arrayBuffer();
                 download(photoData, filename, "image/jpeg");
             })
+
+        } else if (message.command === "download-photos-in-one-file") {
+            const data = await getCurrentProductPageJsonData();
+            if (data === null) {
+                throw new Error("No JSON data found for the current product page");
+            }
+            const productId = data?.id;
+            const files = data?.photos?.map(photo => {
+                const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
+                const photoUrl = photo.full_size_url;
+                return { name: filename, url: photoUrl };
+            })
+            await downloadFilesAsTar(files);
         }
 
     });
