@@ -81,7 +81,7 @@
     /*
     Build a tar file in order to download all the images at once.
      */
-    const downloadFilesAsTar = async (files) => {
+    const downloadFilesAsTar = async (files, tarFileName) => {
         const encoder = new TextEncoder();
         const tarParts = [];
 
@@ -130,7 +130,7 @@
         tarParts.push(new Uint8Array(1024));
 
         const tarBlob = new Blob(tarParts, { type: 'application/x-tar' });
-        download(tarBlob, "vinted-photos.tar");
+        download(tarBlob, tarFileName);
     }
 
     /*
@@ -224,7 +224,8 @@
                 const photoUrl = photo.full_size_url;
                 return { name: filename, url: photoUrl };
             })
-            await downloadFilesAsTar(files);
+            const tarFileName = `vinted-item-${productId}-photos.tar`;
+            await downloadFilesAsTar(files, tarFileName);
         }
 
     });
