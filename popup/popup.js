@@ -46,4 +46,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-browser.tabs.executeScript({file: "/content_scripts/download.js"}).then(listenForClicks);
+browser.tabs.executeScript({ file: "/content_scripts/utils.js" }).then(() => {
+    return browser.tabs.executeScript({ file: "/content_scripts/download.js" });
+}).then(listenForClicks);

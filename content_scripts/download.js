@@ -34,35 +34,8 @@
     Extract JSON data from the current page html.
     */
     const getCurrentProductPageJsonData = async () => {
-        const extractItemDtoData = (str) => {
-            const regex = /<script\b[^>]*>self\.__next_f\.push\((.*?)\)<\/script>/gi;
-            let match;
-            while ((match = regex.exec(str)) !== null) {
-                const content = match[1];
-                if (content.includes("itemDto")) {
-                    return content;
-                }
-            }
-            return null;
-        }
         const htmlContent = await getCurrentProductPageHtml();
-        const arrayStr = extractItemDtoData(htmlContent)
-        if (arrayStr == null) {
-            return null;
-        }
-        const array = JSON.parse(arrayStr)
-        let jsonData = null;
-        for (let item of array) {
-            if (typeof item === "string" && item.includes("itemDto")) {
-                const jsonString = item.replace(/^[a-zA-Z0-9]+:/, "");
-                jsonData = JSON.parse(jsonString);
-                break;
-            }
-        }
-        if (jsonData == null) {
-            throw new Error("Failed to extract JSON data from the page.");
-        }
-        return jsonData[1][3]["itemDto"];
+        return extractJsonDataFromHtml(htmlContent);
     }
 
     /*
@@ -160,7 +133,7 @@
             }
 
         } else if (message.command === "download-images") {
-            const [conversationId, conversationUrl, tld] = getConversationUrl();
+            const [conversationId, conversationUrl] = getConversationUrl();
             const fetched = await fetch(conversationUrl);
             const data = await fetched.json();
             data?.conversation?.messages?.forEach(message => {
@@ -174,55 +147,41 @@
             })
 
         } else if (message.command === "download-product") {
-            const data = await getCurrentProductPageJsonData();
-            if (data === null) {
-                throw new Error("No JSON data found for the current product page");
-            }
-            const productId = data?.id;
+            const {rawJson} = await getCurrentProductPageJsonData();
+            const productId = rawJson?.id;
             const filename = `vinted-item-${productId}.json`;
-            download(JSON.stringify(data), filename, "application/json");
+            download(JSON.stringify(rawJson), filename, "application/json");
 
         } else if (message.command === "download-summary") {
-            const data = await getCurrentProductPageJsonData();
-            if (data === null) {
-                throw new Error("No JSON data found for the current product page");
-            }
-            const productId = data?.id;
+            const {data} = await getCurrentProductPageJsonData();
+            const productId = data.id;
             const filename = `vinted-item-${productId}-summary.txt`;
             const summary = (
                 `id: ${productId}\n` +
                 `source: ${window.location.href}\n` +
-                `title: ${data?.title}\n` +
+                `title: ${data.title}\n` +
                 `description: ${data.description}\n` +
-                `seller: ${data.user?.login}\n` +
-                `seller id: ${data.user?.id}`
+                `seller: ${data.seller}\n` +
+                `seller id: ${data.sellerId}`
             )
             download(summary, filename, "text/plain");
 
         } else if (message.command === "download-photos") {
-            const data = await getCurrentProductPageJsonData();
-            if (data === null) {
-                throw new Error("No JSON data found for the current product page");
-            }
-            const productId = data?.id;
-            data?.photos?.forEach(async photo => {
+            const {data} = await getCurrentProductPageJsonData();
+            const productId = data.id;
+            data.photos.forEach(async photo => {
                 const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
-                const photoUrl = photo.full_size_url;
-                const photoFetched = await fetch(photoUrl);
+                const photoFetched = await fetch(photo.url);
                 const photoData = await photoFetched.arrayBuffer();
                 download(photoData, filename, "image/jpeg");
             })
 
         } else if (message.command === "download-photos-in-one-file") {
-            const data = await getCurrentProductPageJsonData();
-            if (data === null) {
-                throw new Error("No JSON data found for the current product page");
-            }
-            const productId = data?.id;
-            const files = data?.photos?.map(photo => {
+            const {data} = await getCurrentProductPageJsonData();
+            const productId = data.id;
+            const files = data.photos.map(photo => {
                 const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
-                const photoUrl = photo.full_size_url;
-                return { name: filename, url: photoUrl };
+                return { name: filename, url: photo.url };
             })
             const tarFileName = `vinted-item-${productId}-photos.tar`;
             await downloadFilesAsTar(files, tarFileName);
