@@ -52,6 +52,15 @@
     };
 
     /*
+    Get the last part of the current URL.
+     */
+    const getLastPartOfUrl = () => {
+        const path = window.location.pathname;
+        const segments = path.split('/').filter(Boolean);
+        return segments[segments.length - 1];
+    }
+
+    /*
     Build a tar file in order to download all the images at once.
      */
     const downloadFilesAsTar = async (files, tarFileName) => {
@@ -183,7 +192,8 @@
                 const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
                 return { name: filename, url: photo.url };
             })
-            const tarFileName = `vinted-item-${productId}-photos.tar`;
+            const lastPart = getLastPartOfUrl();
+            const tarFileName = `vinted-item-${lastPart}-photos.tar`;
             await downloadFilesAsTar(files, tarFileName);
         }
 
