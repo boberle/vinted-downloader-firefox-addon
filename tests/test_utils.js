@@ -130,6 +130,27 @@ const expectedData = {
                 "url": "https://images1.vinted.net/tc/02_02551_Yj7wfwx7jQ8ZDZ6xGjq2WtVq/1750246697.jpeg?s=ba2a2f34ac030946bbbbc5315f0078e261d86400"
             }
         ]
+    },
+    "empire_romain.html": {
+        id: 6791564867,
+        title: "L'empire romain Que sais-je ?",
+        description: 'Très bon état !',
+        seller: 'mxxnooon',
+        sellerId: 24410350,
+        photos: [
+            {
+                id: 27624304282,
+                url: 'https://images1.vinted.net/tc/03_00622_WdCbTzUy64XKFf11J3xczS82/1754060921.webp?s=821dafdfc1ec337aca1b0ab08925ec33b9a7cf7a'
+            },
+            {
+                id: 27624304294,
+                url: 'https://images1.vinted.net/tc/03_0086d_r5eeHrE2gVeKnx3tYaAYvX1P/1754060921.webp?s=8c735dcb5818832966be11d211e392740eb95433'
+            },
+            {
+                id: 27624304305,
+                url: 'https://images1.vinted.net/tc/02_01aa5_NdvYmUxBRpTPsPvQZbcannr6/1754060921.webp?s=b54f1de2e9c0056568e1258dbe94932ba4afc07f'
+            }
+        ]
     }
 }
 

@@ -179,17 +179,17 @@
             const {data} = await getCurrentProductPageJsonData();
             const productId = data.id;
             data.photos.forEach(async photo => {
-                const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
+                const filename = `vinted-item-${productId}-photo-${photo.id}.webp`;
                 const photoFetched = await fetch(photo.url);
                 const photoData = await photoFetched.arrayBuffer();
-                download(photoData, filename, "image/jpeg");
+                download(photoData, filename, "image/webp");
             })
 
         } else if (message.command === "download-photos-in-one-file") {
             const {data} = await getCurrentProductPageJsonData();
             const productId = data.id;
             const files = data.photos.map(photo => {
-                const filename = `vinted-item-${productId}-photo-${photo.id}.jpg`;
+                const filename = `vinted-item-${productId}-photo-${photo.id}.webp`;
                 return { name: filename, url: photo.url };
             })
             const lastPart = getLastPartOfUrl();
