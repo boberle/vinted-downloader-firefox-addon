@@ -44,7 +44,7 @@
     const getConversationUrl = () => {
         const conversationId = window.location.href.match(/\d+/).pop();
         const tld = window.location.host
-            .match(/\.[a-z]+$/)
+            .match(/(?:\.co\.uk|\.[a-z]+)$/)
             .pop()
             .slice(1);
         const conversationUrl = `https://www.vinted.${tld}/api/v2/conversations/${conversationId}`;

@@ -66,7 +66,9 @@
       "https://www.vinted.sk/inbox/*",
       "https://www.vinted.sk/items/*",
       "https://www.vinted.com/inbox/*",
-      "https://www.vinted.com/items/*"
+      "https://www.vinted.com/items/*",
+      "https://www.vinted.co.uk/inbox/*",
+      "https://www.vinted.co.uk/items/*"
     ]
   }
 }
