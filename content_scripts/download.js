@@ -4,6 +4,25 @@
     }
     window.hasRun = true;
 
+    const bufToText = (buf) => new TextDecoder().decode(new Uint8Array(buf));
+
+    function captureViaNavigation(jsonUrl) {
+        return new Promise((resolve, reject) => {
+            const onMsg = (msg) => {
+                if (msg?.type === "json-captured" && msg.url.startsWith(jsonUrl)) {
+                    browser.runtime.onMessage.removeListener(onMsg);
+                    try {
+                        const text = bufToText(msg.body);
+                        let json = null; try { json = JSON.parse(text); } catch {}
+                        resolve({ text, json });
+                    } catch (e) { reject(e); }
+                }
+            };
+            browser.runtime.onMessage.addListener(onMsg);
+            browser.runtime.sendMessage({ type: "navigate-and-capture", url: jsonUrl }).catch(reject);
+        });
+    }
+
     /*
     Actually make the download the given data when the user clicks on a button.
      */
@@ -122,30 +141,38 @@
         if (message.command === "download-conversation") {
             const [conversationId, conversationUrl] = getConversationUrl();
             const filename = `vinted-conversation-${conversationId}.json`;
-            const fetched = await fetch(conversationUrl);
-            const data = await fetched.text();
-            download(data, filename, "application/json");
+            const { json } = await captureViaNavigation(conversationUrl);
+            if (!json) {
+                throw new Error("Conversation is not valid JSON");
+            }
+            download(JSON.stringify(json), filename, "application/json");
 
         } else if (message.command === "download-shipment") {
             const [conversationId, conversationUrl, tld] = getConversationUrl();
-            const fetched = await fetch(conversationUrl);
-            const data = await fetched.json();
-            const shipmentId = data?.conversation?.transaction?.id;
+            const { json } = await captureViaNavigation(conversationUrl);
+            if (!json) {
+                throw new Error("Conversation is not valid JSON");
+            }
+            const shipmentId = json?.conversation?.transaction?.id;
             if (shipmentId) {
                 const filename = `vinted-conversation-${conversationId}-shipment.json`;
                 const shipmentUrl = `https://www.vinted.${tld}/api/v2/transactions/${shipmentId}/shipment/journey_summary`;
-                const shipmentFetched = await fetch(shipmentUrl);
-                const shipmentData = await shipmentFetched.text();
-                download(shipmentData, filename, "application/json");
+                const { json: shipmentJson } = await captureViaNavigation(shipmentUrl);
+                if (!shipmentJson) {
+                    throw new Error("Conversation is not valid JSON");
+                }
+                download(JSON.stringify(shipmentJson), filename, "application/json");
             } else {
                 throw new Error("No shipment ID found");
             }
 
         } else if (message.command === "download-images") {
             const [conversationId, conversationUrl] = getConversationUrl();
-            const fetched = await fetch(conversationUrl);
-            const data = await fetched.json();
-            data?.conversation?.messages?.forEach(message => {
+            const { json } = await captureViaNavigation(conversationUrl);
+            if (!json) {
+                throw new Error("Conversation is not valid JSON");
+            }
+            json?.conversation?.messages?.forEach(message => {
                 message.entity?.photos?.forEach(async photo => {
                     const filename = `vinted-conversation-${conversationId}-photo-${photo.id}.jpg`;
                     const photoUrl = photo.full_size_url;
