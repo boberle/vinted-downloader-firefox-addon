@@ -43,8 +43,8 @@ function extractJsonDataFromHtmlUsingItemDto (htmlContent)  {
 
 function extractJsonDataFromHtmlUsingFullSizeUrl (htmlContent) {
     const getItemDict = (data) => {
-        if (typeof data === 'object' && !Array.isArray(data) && data.hasOwnProperty('item')) {
-            return data['item'];
+        if (typeof data === 'object' && !Array.isArray(data) && data.hasOwnProperty('photos')) {
+            return data;
         }
         if (Array.isArray(data)) {
             for (const item of data) {
