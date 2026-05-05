@@ -97,7 +97,7 @@ function extractJsonDataFromHtml(htmlContent) {
     let rawJson = extractJsonDataFromHtmlUsingItemDto(htmlContent);
     if (rawJson != null) {
         const data = {
-            "id": rawJson?.id,
+            "id": rawJson?.id || rawJson?.item_id,
             "title": rawJson?.title,
             "description": rawJson?.description,
             "seller": rawJson.user?.login,
@@ -111,8 +111,8 @@ function extractJsonDataFromHtml(htmlContent) {
     rawJson = extractJsonDataFromHtmlUsingFullSizeUrl(htmlContent);
     if (rawJson!= null) {
         const data = {
-            "id": rawJson?.id,
-            "title": rawJson?.title,
+            "id": rawJson?.item_id,
+            "title": rawJson?.accessibility_label,
             "description": "?",
             "seller": "?",
             "sellerId": rawJson?.seller_id,

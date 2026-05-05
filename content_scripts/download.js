@@ -184,7 +184,7 @@
 
         } else if (message.command === "download-product") {
             const {rawJson} = await getCurrentProductPageJsonData();
-            const productId = rawJson?.id;
+            const productId = rawJson?.id || rawJson?.item_id;
             const filename = `vinted-item-${productId}.json`;
             download(JSON.stringify(rawJson), filename, "application/json");
 
