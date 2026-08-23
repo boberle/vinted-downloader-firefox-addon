@@ -207,7 +207,7 @@
             const productId = data.id;
             data.photos.forEach(async photo => {
                 const filename = `vinted-item-${productId}-photo-${photo.id}.webp`;
-                const photoFetched = await fetch(photo.url);
+                const photoFetched = await fetch(photo.full_size_url);
                 const photoData = await photoFetched.arrayBuffer();
                 download(photoData, filename, "image/webp");
             })
@@ -217,7 +217,7 @@
             const productId = data.id;
             const files = data.photos.map(photo => {
                 const filename = `vinted-item-${productId}-photo-${photo.id}.webp`;
-                return { name: filename, url: photo.url };
+                return { name: filename, url: photo.full_size_url };
             })
             const lastPart = getLastPartOfUrl();
             const tarFileName = `vinted-item-${lastPart}-photos.tar`;
