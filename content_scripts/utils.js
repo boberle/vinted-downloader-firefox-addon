@@ -41,6 +41,62 @@ function extractJsonDataFromHtmlUsingItemDto (htmlContent)  {
     return null;
 }
 
+
+function extractJsonDataFromHtmlUsingSummary (htmlContent) {
+    const getItemDict = (data) => {
+        if (!Array.isArray(data)) {
+            return null;
+        }
+        for (const element of data) {
+            if (element != null && typeof element === 'object' && !Array.isArray(element) && element.hasOwnProperty('plugins')) {
+                const rv = {};
+                for (const plugin of element.plugins) {
+                    //if (plugin.name === "summary") {
+                    //    rv.title = plugin.data?.lines?.[0]?.elements?.[0]?.value;
+                    //}
+                    if (plugin.name === "description") {
+                        rv.description = plugin.data?.description;
+                    }
+                    if (plugin.name === "make_offer") {
+                        rv.item_id = plugin.data?.item_id;
+                        rv.title = plugin.data?.title;
+                        rv.seller_id = plugin.data?.seller_id;
+                        rv.photos = plugin.data?.photos?.map(photo => {return {id: photo.id, url: photo.url}});
+                    }
+                    if (plugin.name === "user_info_header") {
+                        rv.seller_username = plugin.data?.name;
+                    }
+                }
+                return rv;
+            }
+        }
+        return null;
+    }
+    const regex = /<script\b[^>]*>self\.__next_f\.push\((.*?)\)<\/script>/gs;
+    const matches = htmlContent.matchAll(regex);
+    for (const match of matches) {
+        if (!match[1].includes('"summary\\"')) {
+            continue;
+        }
+        const outerList = JSON.parse(match[1]);
+        for (const outerItem of outerList) {
+            if (typeof outerItem !== 'string') {
+                continue;
+            }
+            const modified = outerItem.replace(/^[a-zA-Z0-9]+:\[/, '[');
+            if (modified !== outerItem) {
+                const parsed = JSON.parse(modified);
+                const found = getItemDict(parsed);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+
 function extractJsonDataFromHtmlUsingFullSizeUrl (htmlContent) {
     const getItemDict = (data) => {
         if (typeof data === 'object' && !Array.isArray(data) && data.hasOwnProperty('photos')) {
@@ -121,6 +177,20 @@ function extractJsonDataFromHtml(htmlContent) {
             ))
         }
         return {rawJson, data};
+    }
+    rawJson = extractJsonDataFromHtmlUsingSummary(htmlContent);
+    if (rawJson!= null) {
+        const data = {
+            "id": rawJson?.item_id,
+            "title": rawJson?.title,
+            "description": rawJson?.description,
+            "seller": rawJson?.seller_username,
+            "sellerId": rawJson?.seller_id,
+            "photos": rawJson?.photos?.map(photo => (
+                { id: photo?.id, url: photo?.url }
+            ))
+        }
+        return {rawJson: data, data: data};
     }
     throw new Error("Failed to extract JSON data from the page.");
 }
